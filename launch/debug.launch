@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="particles" type="particles_node" name="particles_node">
+        <param name="z_hit" value="1.0" />
+    </node>
+</launch>
