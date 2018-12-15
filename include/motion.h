@@ -2,7 +2,7 @@
 #define DEF_MOTION_H
 
 #include <util/pose.h>
-#include <util/random.h>
+#include <util/random2.h>
 
 class Motion
 {
@@ -51,6 +51,13 @@ class Omni : public Motion
         void setOdometry(pose2d_t param)
         {
             diff = param;
+        }
+        void setMotionParams(float alpha_1, float alpha_2, float alpha_3, float alpha_4)
+        {
+            alpha[0] = alpha_1;
+            alpha[1] = alpha_2;
+            alpha[2] = alpha_3;
+            alpha[3] = alpha_4;
         }
     private:
         RandomGenerator g;

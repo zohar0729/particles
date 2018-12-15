@@ -7,22 +7,40 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/OccupancyGrid.h>
 
+#include <pf.h>
 #include <map.h>
 #include <sensor.h>
 #include <motion.h>
 
-class MCLProcessor
+class ParticlesNode
 {
     public:
-        MCLProcesser() :
-            n_samples(1000),
-            n_sensors(1)
+        ParticlesNode()
         {
-            prior = new particle_t[n_samples];
-            posterior = new particle_t[n_samples];   
-            map = new OccupancyGrid;
-            sensors = new Lidar;
-            model = new Omni;
+            ros::NodeHandle nh("~");
+            pose2d_t initial_pose_, std_err_;
+            float alpha_1_, alpha_2_, alpha_3_, alpha_4_;
+            float z_hit_, z_short_, z_max_, z_err_;
+
+            nh.param<float>("initial_pose_x", initial_pose_.x, 0.0);
+            nh.param<float>("initial_pose_y", initial_pose_.y, 0.0);
+            nh.param<float>("initial_pose_theta", initial_pose_.theta, 0.0);
+            nh.param<float>("initial_stderr_x", std_err_.x, 0.1);
+            nh.param<float>("initial_stderr_y", std_err_.y, 0.1);
+            nh.param<float>("initial_stderr_theta", std_err_.theta, 0.1);
+
+            nh.param<float>("alpha_1", alpha_1_, 0.1);
+            nh.param<float>("alpha_2", alpha_2_, 0.1);
+            nh.param<float>("alpha_3", alpha_3_, 0.1);
+            nh.param<float>("alpha_4", alpha_4_, 0.1);
+
+            nh.param<float>("z_hit", z_hit_, 0.03);
+            nh.param<float>("z_short", z_short_, 0.2);
+            nh.param<float>("z_max", z_max_, 30.0);
+            nh.param<float>("z_err", z_err_, 0.01);
+
+            omni.setMotionParams(alpha_1_, alpha_2_, alpha_3_, alpha_4_);
+            lrf.setSensorParams(z_hit_, z_short_, z_max_, z_err_);
         }
         void mapCallback(const nav_msgs::OccupancyGrid& msg)
         {
@@ -36,34 +54,27 @@ class MCLProcessor
         }
         void odomCallback(const geometry_msgs::TwistStamped& msg)
         {
-            // TODO: オドメトリ受信時の処理
+            pose2d_t odom;
+            odom.x = msg.twist.linear.x;
+            odom.y = msg.twist.linear.y;
+            odom.theta = msg.twist.angular.z;
+            omni.setOdometry(odom);
         }
     private:
-        // ROS関係
-        ros::Nodehandle private_nh;
-        // 初期分布、提案分布、事後分布
-        particle_t *prior, *posterior;
-        int n_samples;
-
+        //パーティクルフィルタ本体
+        pf p;
         // 地図、動作・計測モデル
-        Map *map;
-        Sensor *sensors;
-        Motion *model;
+        OccupancyGrid map;
+        Lidar lrf;
+        Omni omni;
+        // 蓄積された姿勢の変位
+        pose2d_t delta;
 };
 
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "particles");
-    ros::NodeHandle nh;
-    MCLProcessor p;
-
-    // トピックの購読
-    ros::Subscriber map_sub = nh.subscribe("/map", 1, mapCallback);
-    ros::Subscriber scan_sub = nh.subscribe("/scan", 10, scanCallback);
-    ros::Subscriber odom_sub = nh.subscribe("/robot_encoder", 10, odomCallback);
-
-    // 配信トピックの宣伝
-    ros::Publisher pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/robot_pose", 10);
+    ParticlesNode p;
 
     ros::spin();
     return 0;
@@ -80,11 +91,10 @@ int main(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
-    RandomGenerator g;
-    pf p(&g);
+    pf p;
     pose2d_t initial, std_err, odom;
     Omni omni(0.1, 0.1, 0.06, 0.06);
-    DummySensor lrf(2.0, 1.0, 0.0);
+    DummySensor lrf(2.0, 0.0, 0.0);
 
     if(argc < 4)
     {
@@ -103,20 +113,10 @@ int main(int argc, char** argv)
     odom.y = atof(argv[2]);
     odom.theta = atof(argv[3]);
 
-    
     p.createInitialDistribution(initial, std_err);
-#ifdef DEBUG
-    printf("初期分布の生成に成功しました\n");
-#endif
     omni.setOdometry(odom);
     p.createProposalDistribution(&omni);
-#ifdef DEBUG
-    printf("事前分布の生成に成功しました\n");
-#endif
     p.createPosteriorDistribution(&lrf);
-#ifdef DEBUG
-    printf("事後分布の生成に成功しました\n");
-#endif
     p.displaySamples(POSTERIOR_DISTRIBUTION);
 }
 

@@ -19,15 +19,15 @@ enum target_distribution
     POSTERIOR_DISTRIBUTION = 1
 };
 
-class pf 
+class pf
 {
     public:
-        pf(RandomGenerator *gen) : n_samples(1000), g(gen)
+        pf() : n_samples(1000)
         {
             prior = new particle_t[n_samples];
             posterior = new particle_t[n_samples];
         }
-        pf(RandomGenerator *gen, int n) : n_samples(n), g(gen)
+        pf(int n) : n_samples(n)
         {
             prior = new particle_t[n_samples];
             posterior = new particle_t[n_samples];
@@ -42,9 +42,9 @@ class pf
         {
             for(int i = 0; i < n_samples; i++)
             {
-                prior[i].state.x = g->rand_normal(initial_pose.x, std_err.x);
-                prior[i].state.y = g->rand_normal(initial_pose.y, std_err.y);
-                prior[i].state.theta = g->rand_normal(initial_pose.theta, std_err.theta);
+                prior[i].state.x = g.rand_normal(initial_pose.x, std_err.x);
+                prior[i].state.y = g.rand_normal(initial_pose.y, std_err.y);
+                prior[i].state.theta = g.rand_normal(initial_pose.theta, std_err.theta);
             }
         }
         // 動作モデルに従って事前分布を生成する
@@ -62,26 +62,27 @@ class pf
             float cursol;
             int i, j;
 
+            // 尤度計算
             for(i = 0; i < n_samples; i++)
             {
                 prior[i].likelihood = model->calcLikelihood(prior[i].state);
                 total_likelihood += prior[i].likelihood;
             }
-#ifdef DEBUG
-            printf("total_likelihood = %f\n", total_likelihood);
-#endif
             sortSamplesByLikelihood(prior);
-#ifdef DEBUG
-            printf("パーティクルのソートに成功\n");
-#endif
+            // リサンプリング
             for(i = 0; i < n_samples; i++)
             {
-                cursol = g->Uniform() * total_likelihood;
+                cursol = g.Uniform() * total_likelihood;
                 for(j = 0; (cursol > 0 && j < n_samples); j++)
                 {
                     cursol -= prior[j].likelihood;
                 }
                 posterior[i] = prior[j];
+            }
+            // 事前分布にコピー
+            for(i = 0; i < n_samples; i++)
+            {
+                prior[i] = posterior[i];
             }
         }
         void displaySamples(int flag)
@@ -126,7 +127,7 @@ class pf
             *from = tmp;
         }
         // 乱数生成器
-        RandomGenerator *g;
+        RandomGenerator g;
         // 事前分布、事後分布
         particle_t *prior, *posterior;
         int n_samples;
