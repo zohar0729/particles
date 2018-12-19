@@ -1,0 +1,11 @@
+alpha_1 = 0.01
+alpha_2 = 0.01
+alpha_3 = 0.01
+alpha_4 = 0.01
+x_range_min = -0.2
+x_range_max = 0.2
+y_range_min = -0.2
+y_range_max = 0.2
+initial_position_error = 0.008
+initial_rotate_error = 0.3
+n_samples = 1000

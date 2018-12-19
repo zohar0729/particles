@@ -28,6 +28,13 @@ class DummySensor : public Sensor
             sensor_pose.y = y;
             sensor_pose.theta = theta;
         }
+        DummySensor(float x, float y, float theta, float std_err_position)
+        {
+            sensor_pose.x = x;
+            sensor_pose.y = y;
+            sensor_pose.theta = theta;
+            std_err = std_err_position;
+        }
         DummySensor(pose2d_t p) : sensor_pose(p){}
         float calcLikelihood(pose2d_t state)
         {

@@ -85,21 +85,24 @@ class pf
                 prior[i] = posterior[i];
             }
         }
-        void displaySamples(int flag)
+        // パーティクルの状態を配列の形で返す
+        int displaySamples(int flag, float* samples)
         {
             for(int i = 0; i < n_samples; i++)
             {
                 if(flag == PRIOR_DISTRIBUTION)
                 {
-                    printf("%f %f %f %f\n", 
-                        prior[i].state.x, prior[i].state.y, 
-                        0.1 * cos(prior[i].state.theta), 0.1 * sin(prior[i].state.theta));
+                    samples[4 * i + 0] = prior[i].state.x;
+                    samples[4 * i + 1] = prior[i].state.y;
+                    samples[4 * i + 2] = 0.02 * cos(prior[i].state.theta);
+                    samples[4 * i + 3] = 0.02 * sin(prior[i].state.theta);
                 }
                 else
                 {
-                    printf("%f %f %f %f\n", 
-                        posterior[i].state.x, posterior[i].state.y, 
-                        0.1 * cos(posterior[i].state.theta), 0.1 * sin(posterior[i].state.theta));
+                    samples[4 * i + 0] = posterior[i].state.x;
+                    samples[4 * i + 1] = posterior[i].state.y;
+                    samples[4 * i + 2] = 0.02 * cos(posterior[i].state.theta);
+                    samples[4 * i + 3] = 0.02 * sin(posterior[i].state.theta);
                 }
             }
         }
