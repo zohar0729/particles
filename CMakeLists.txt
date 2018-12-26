@@ -27,9 +27,13 @@ include_directories(
 
 ## Declare a C++ executable
 add_executable(particles_node src/particles_node.cpp)
+add_executable(single_test src/single_test.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(particles_node
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(single_test
   ${catkin_LIBRARIES}
 )
 
